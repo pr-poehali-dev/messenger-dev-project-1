@@ -2,6 +2,7 @@ import { useState } from 'react';
 import NavigationSidebar from '@/components/NavigationSidebar';
 import ChatSidebar from '@/components/ChatSidebar';
 import ChatWindow from '@/components/ChatWindow';
+import SettingsPanel from '@/components/SettingsPanel';
 
 interface Chat {
   id: number;
@@ -71,6 +72,8 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      {activeSection === 'settings' && <SettingsPanel />}
     </div>
   );
 };

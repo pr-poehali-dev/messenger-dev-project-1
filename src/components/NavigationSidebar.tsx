@@ -49,7 +49,17 @@ export default function NavigationSidebar({ activeSection, onSectionChange }: Na
         ))}
       </div>
 
-      <Button variant="ghost" size="icon" className="w-12 h-12 text-sidebar-foreground" title="Настройки">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => onSectionChange('settings')}
+        className={`w-12 h-12 ${
+          activeSection === 'settings'
+            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+            : 'text-sidebar-foreground hover:bg-sidebar-accent'
+        }`}
+        title="Настройки"
+      >
         <Icon name="Settings" size={24} />
       </Button>
     </div>
