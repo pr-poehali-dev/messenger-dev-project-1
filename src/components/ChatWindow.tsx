@@ -44,6 +44,10 @@ export default function ChatWindow({ chat, userId }: ChatWindowProps) {
     };
 
     fetchMessages();
+    
+    const interval = setInterval(fetchMessages, 2000);
+    
+    return () => clearInterval(interval);
   }, [chat]);
 
   const handleSendMessage = async () => {

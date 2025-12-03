@@ -39,6 +39,10 @@ export default function ChatSidebar({ onSelectChat, selectedChatId, userId }: Ch
     };
 
     fetchChats();
+    
+    const interval = setInterval(fetchChats, 3000);
+    
+    return () => clearInterval(interval);
   }, [userId]);
 
   const filteredChats = chats.filter(chat =>
