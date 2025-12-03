@@ -37,6 +37,18 @@ export default function ChatWindow({ chat, userId }: ChatWindowProps) {
       try {
         const response = await fetch(`${API_URL}?chat_id=${chat.id}`);
         const data = await response.json();
+        
+        if (data.length > messages.length && messages.length > 0) {
+          const newMessages = data.slice(messages.length);
+          const hasNewFromOthers = newMessages.some((msg: Message) => msg.sender_id !== userId);
+          
+          if (hasNewFromOthers) {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIF2i58+adTRAMUKfk77dhGwU7k9bxy3goBS57zO/ckjwKElyx6OyrUhMGPZva8r1qIAUrgc7z2YcyCBxlvPDinUgLCEup4/C4YhgFOJLX8st6JwUte8vw3ZI8ChJcsfDsqVAUBjuZ2fK8aB4DLYPO89iHLwYYY7vw450/DApMqePwuGIYBziS1/HLeSYELHrL8N+SOgoTXLDv7KlSFAU7mNjyu2gdAy2Dz/PYhy8GGmK68+OdQAwLSqng77dhHAU5ktfxy3cnByx5y/DekzoKE1yw7+ypUhQFO5jZ8rtpHQMtg8/z2IYuBhhiu/Hjn0ALCkuq4O+2YRsGOJLX8ct4JgQsecvw3pQ7ChNcsO7tqVEUBjqZ2PK7aRwDLIPP89iFLgUYY7rw4Z5ACgpKq9/utmAaBjmS1vLLeCgELHnL796TPAoSW7Hu66lUFAU6mdnyumodAy2Dz/PYhS4GGmO68OOeQQsLS6jg7rdhGgY4kdbxy3goBSx5y/DflTsKElyx7uupUhQFO5jY8rtqHgMtg8/y2IUuBRhjuvDjnkALC0qr3+62YBoFOZLW8st5KAUsecvw3pI8ChFbsO3sqVMTBTuY2PG8aR0DL4PP89iFLgYZY7rw4p5AC0tKq9/vtl8aBTeS1fHLeCoELHrK796UOwsRXLDu6qlTFQU7mNjxu2sfBC2Cz/PYhC4FGmO68OOeQApLSavf77VgGgU3ktXxy3goBSx7yvDflTsLEVux7eqoUhUIOpjY8rpqHQMtg8/z2IQtBRlkuvDjnj8LSkqq3++1YRoFN5LV8ct4KAUsecvw35M7ChJbsO3rpFIVBTuY2PG7ah4DLYLPtm8aBTWS1fHLeScGLHvL8N+TOwsRW7Dt66hSFAY7l9fxu2odAy2Cz/PXhC4FGmO68OKeQApLSqre77VfGgY2ktXxy3goBSx7yvDflDsLEVuw7euoUhQGOpfX8bpqHQMtgs/z14MuBRpjuvDinkAKSkqq3++1YBoGNpLV8ct4KAYse8rw35Q7CxFbse3qp1IUBjuX1/G6ah0DLIHPtC4FGWO68OKdQApLSqre77ZgGgY3ktXwy3koBSx7yvDfkzsKElyw7OqoUhQGOpfY8bppHQMtgs/z14MtBRpjuvDinkEKSkqq3u+2YRoFN5HV8ct5KAUse8nw3pM7ChJcr+zqp1MUBTuY2PG6ah0DLYHO');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+          }
+        }
+        
         setMessages(data);
       } catch (error) {
         console.error('Error fetching messages:', error);
@@ -48,7 +60,7 @@ export default function ChatWindow({ chat, userId }: ChatWindowProps) {
     const interval = setInterval(fetchMessages, 2000);
     
     return () => clearInterval(interval);
-  }, [chat]);
+  }, [chat, messages.length, userId]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !chat) return;
