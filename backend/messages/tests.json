@@ -1,0 +1,46 @@
+{
+  "tests": [
+    {
+      "name": "Get user chats",
+      "method": "GET",
+      "path": "/?user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "name": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get chat messages",
+      "method": "GET",
+      "path": "/?chat_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "text": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Send new message",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "chat_id": 1,
+        "sender_id": 1,
+        "text": "Test message"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "text": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

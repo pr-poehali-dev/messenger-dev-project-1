@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -8,34 +8,58 @@ import Icon from '@/components/ui/icon';
 interface Chat {
   id: number;
   name: string;
-  avatar: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  online: boolean;
-  isGroup?: boolean;
+  avatar_url?: string;
+  last_message?: string;
+  last_message_time?: string;
+  unread_count?: number;
+  is_group?: boolean;
 }
-
-const mockChats: Chat[] = [
-  { id: 1, name: 'Анна Петрова', avatar: '', lastMessage: 'Отлично, встретимся завтра!', time: '14:23', unread: 2, online: true },
-  { id: 2, name: 'Команда разработки', avatar: '', lastMessage: 'Михаил: Код готов к ревью', time: '13:45', unread: 5, online: false, isGroup: true },
-  { id: 3, name: 'Дмитрий Иванов', avatar: '', lastMessage: 'Привет! Как дела?', time: '12:30', unread: 0, online: true },
-  { id: 4, name: 'Семейный чат', avatar: '', lastMessage: 'Мама: Не забудь про ужин', time: '11:15', unread: 1, online: false, isGroup: true },
-  { id: 5, name: 'Мария Сидорова', avatar: '', lastMessage: 'Спасибо за помощь!', time: '10:20', unread: 0, online: false },
-  { id: 6, name: 'Книжный клуб', avatar: '', lastMessage: 'Олег: Новая книга просто огонь 🔥', time: 'Вчера', unread: 0, online: false, isGroup: true },
-];
 
 interface ChatSidebarProps {
   onSelectChat: (chat: Chat) => void;
   selectedChatId: number | null;
+  userId: number;
 }
 
-export default function ChatSidebar({ onSelectChat, selectedChatId }: ChatSidebarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+const API_URL = 'https://functions.poehali.dev/0749f3a7-9a6a-4a5f-bfc3-ca4866708a12';
 
-  const filteredChats = mockChats.filter(chat =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+export default function ChatSidebar({ onSelectChat, selectedChatId, userId }: ChatSidebarProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [chats, setChats] = useState<Chat[]>([]);
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const response = await fetch(`${API_URL}?user_id=${userId}`);
+        const data = await response.json();
+        setChats(data);
+      } catch (error) {
+        console.error('Error fetching chats:', error);
+      }
+    };
+
+    fetchChats();
+  }, [userId]);
+
+  const filteredChats = chats.filter(chat =>
+    chat.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const formatTime = (timestamp?: string) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    
+    if (hours < 24) {
+      return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    } else if (hours < 48) {
+      return 'Вчера';
+    } else {
+      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    }
+  };
 
   return (
     <div className="w-80 border-r border-border flex flex-col h-full">
@@ -62,27 +86,24 @@ export default function ChatSidebar({ onSelectChat, selectedChatId }: ChatSideba
           >
             <div className="relative">
               <Avatar>
-                <AvatarImage src={chat.avatar} />
+                <AvatarImage src={chat.avatar_url || ''} />
                 <AvatarFallback className="bg-primary/20 text-primary">
-                  {chat.isGroup ? <Icon name="Users" size={20} /> : chat.name.charAt(0)}
+                  {chat.is_group ? <Icon name="Users" size={20} /> : chat.name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              {chat.online && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
-              )}
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-medium text-sm truncate">{chat.name}</h3>
-                <span className="text-xs text-muted-foreground">{chat.time}</span>
+                <span className="text-xs text-muted-foreground">{formatTime(chat.last_message_time)}</span>
               </div>
-              <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
+              <p className="text-sm text-muted-foreground truncate">{chat.last_message || 'Нет сообщений'}</p>
             </div>
 
-            {chat.unread > 0 && (
+            {chat.unread_count && chat.unread_count > 0 && (
               <Badge className="bg-primary text-primary-foreground rounded-full h-5 min-w-5 px-2">
-                {chat.unread}
+                {chat.unread_count}
               </Badge>
             )}
           </div>

@@ -7,14 +7,14 @@ import SettingsPanel from '@/components/SettingsPanel';
 interface Chat {
   id: number;
   name: string;
-  avatar: string;
-  online: boolean;
-  isGroup?: boolean;
+  avatar_url?: string;
+  is_group?: boolean;
 }
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('chats');
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const userId = 1;
 
   return (
     <div className="h-screen flex bg-background text-foreground overflow-hidden">
@@ -28,8 +28,9 @@ const Index = () => {
           <ChatSidebar
             onSelectChat={(chat) => setSelectedChat(chat)}
             selectedChatId={selectedChat?.id || null}
+            userId={userId}
           />
-          <ChatWindow chat={selectedChat} />
+          <ChatWindow chat={selectedChat} userId={userId} />
         </>
       )}
 

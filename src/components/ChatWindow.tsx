@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,41 +9,64 @@ import Icon from '@/components/ui/icon';
 interface Message {
   id: number;
   text: string;
-  time: string;
-  isMine: boolean;
-  status: 'sent' | 'delivered' | 'read';
+  created_at: string;
+  sender_id: number;
+  status: string;
 }
 
 interface ChatWindowProps {
   chat: {
     id: number;
     name: string;
-    avatar: string;
-    online: boolean;
-    isGroup?: boolean;
+    avatar_url?: string;
+    is_group?: boolean;
   } | null;
+  userId: number;
 }
 
-export default function ChatWindow({ chat }: ChatWindowProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: 'Привет! Как дела?', time: '12:30', isMine: false, status: 'read' },
-    { id: 2, text: 'Привет! Всё отлично, спасибо! А у тебя как?', time: '12:32', isMine: true, status: 'read' },
-    { id: 3, text: 'Тоже всё хорошо. Хотел обсудить проект', time: '12:33', isMine: false, status: 'read' },
-    { id: 4, text: 'Конечно, давай обсудим. Что конкретно интересует?', time: '12:35', isMine: true, status: 'delivered' },
-  ]);
+const API_URL = 'https://functions.poehali.dev/0749f3a7-9a6a-4a5f-bfc3-ca4866708a12';
+
+export default function ChatWindow({ chat, userId }: ChatWindowProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const message: Message = {
-        id: messages.length + 1,
-        text: newMessage,
-        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-        isMine: true,
-        status: 'sent',
-      };
-      setMessages([...messages, message]);
+  useEffect(() => {
+    if (!chat) return;
+
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch(`${API_URL}?chat_id=${chat.id}`);
+        const data = await response.json();
+        setMessages(data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    fetchMessages();
+  }, [chat]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !chat) return;
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chat.id,
+          sender_id: userId,
+          text: newMessage,
+        }),
+      });
+
+      const newMsg = await response.json();
+      setMessages([...messages, newMsg]);
       setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   };
 
@@ -65,14 +88,11 @@ export default function ChatWindow({ chat }: ChatWindowProps) {
         <div className="flex items-center gap-3">
           <div className="relative">
             <Avatar>
-              <AvatarImage src={chat.avatar} />
+              <AvatarImage src={chat.avatar_url || ''} />
               <AvatarFallback className="bg-primary/20 text-primary">
-                {chat.isGroup ? <Icon name="Users" size={20} /> : chat.name.charAt(0)}
+                {chat.is_group ? <Icon name="Users" size={20} /> : chat.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            {chat.online && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
-            )}
           </div>
           <div>
             <h2 className="font-medium">{chat.name}</h2>
@@ -98,34 +118,39 @@ export default function ChatWindow({ chat }: ChatWindowProps) {
 
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isMine ? 'justify-end' : 'justify-start'} animate-fade-in`}
-            >
+          {messages.map((message) => {
+            const isMine = message.sender_id === userId;
+            const time = new Date(message.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            
+            return (
               <div
-                className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                  message.isMine
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-card'
-                }`}
+                key={message.id}
+                className={`flex ${isMine ? 'justify-end' : 'justify-start'} animate-fade-in`}
               >
-                <p className="text-sm">{message.text}</p>
-                <div className="flex items-center justify-end gap-1 mt-1">
-                  <span className={`text-xs ${message.isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {message.time}
-                  </span>
-                  {message.isMine && (
-                    <Icon
-                      name={message.status === 'read' ? 'CheckCheck' : 'Check'}
-                      size={14}
-                      className={message.status === 'read' ? 'text-secondary' : 'text-primary-foreground/70'}
-                    />
-                  )}
+                <div
+                  className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                    isMine
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card'
+                  }`}
+                >
+                  <p className="text-sm">{message.text}</p>
+                  <div className="flex items-center justify-end gap-1 mt-1">
+                    <span className={`text-xs ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                      {time}
+                    </span>
+                    {isMine && (
+                      <Icon
+                        name={message.status === 'read' ? 'CheckCheck' : 'Check'}
+                        size={14}
+                        className={message.status === 'read' ? 'text-secondary' : 'text-primary-foreground/70'}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
 
