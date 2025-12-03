@@ -29,6 +29,8 @@ const API_URL = 'https://functions.poehali.dev/0749f3a7-9a6a-4a5f-bfc3-ca4866708
 export default function ChatWindow({ chat, userId }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!chat) return;
@@ -62,8 +64,27 @@ export default function ChatWindow({ chat, userId }: ChatWindowProps) {
     return () => clearInterval(interval);
   }, [chat, messages.length, userId]);
 
+  const handleTyping = () => {
+    setIsTyping(true);
+    
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      setIsTyping(false);
+    }, 3000);
+    
+    setTypingTimeout(timeout);
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !chat) return;
+
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    setIsTyping(false);
 
     try {
       const response = await fetch(API_URL, {
@@ -112,10 +133,16 @@ export default function ChatWindow({ chat, userId }: ChatWindowProps) {
           </div>
           <div>
             <h2 className="font-medium">{chat.name}</h2>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Icon name="Lock" size={12} />
-              Сквозное шифрование
-            </p>
+            {isTyping ? (
+              <p className="text-xs text-primary flex items-center gap-1 animate-pulse">
+                печатает...
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Icon name="Lock" size={12} />
+                Сквозное шифрование
+              </p>
+            )}
           </div>
         </div>
 
@@ -178,7 +205,10 @@ export default function ChatWindow({ chat, userId }: ChatWindowProps) {
           <Input
             placeholder="Введите сообщение..."
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             className="flex-1"
           />
